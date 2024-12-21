@@ -51,7 +51,7 @@ metadata_obj.create_all(engine)
 
 async def getUserByID(arg):
     arg = arg.strip()
-    matches = re.search("<@&?!?(\d+)>", arg)
+    matches = re.search(r'<@&?!?(\d+)>', arg)
 
     if(matches):
 
