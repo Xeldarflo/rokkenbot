@@ -15,12 +15,11 @@ token = os.environ.get('DISCORD_TOKEN')
 dbUsername = os.environ.get('DB_USERNAME')
 dbPassword = os.environ.get('DB_PASSWORD')
 dbIpPort = os.environ.get('DB_IP_PORT')
-roleIgnored = os.environ.get('ROLE_IGNORED', 0)  #role's id
+roleIgnored = os.environ.get('ROLE_IGNORED')  #role's id
 channelMessage = os.environ.get('CHANNEL_MESSAGE')  #channel's id
-dbName = "rokkenbot"
+dbName = os.environ.get('DB_NAME')
 intents = discord.Intents().all()
 bot = commands.Bot(command_prefix='-r ', intents=intents)
-est = pytz.timezone('Europe/Paris')
 
 metadata_obj = MetaData()
 users = Table('users', metadata_obj,

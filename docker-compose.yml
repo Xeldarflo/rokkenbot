@@ -1,3 +1,27 @@
 services:
   rokkenbot:
-    image: 'dockerfile'
+    build: .
+    environment:
+      - DISCORD_TOKEN=YOUR_TOKEN
+      - DB_USERNAME=SAME_THAN_DB
+      - DB_PASSWORD=SAME_THAN_DB
+      - DB_NAME=SAME_THAN_DB
+      - DB_IP_PORT=db:5432   #Modify it if you are changing the port of the db
+      - ROLE_IGNORED=ONE_ID_ROLE_YOU_DONT_BACKUP    #TODO: Improve to be able to setup multiple roles to ignore
+      - CHANNEL_MESSAGE=ID_CHANNEL_TO_SEND_MESSAGE
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: 'postgres:latest'
+    environment:
+      - POSTGRES_DB=rokken
+      - POSTGRES_PASSWORD=rokken
+      - POSTGRES_USER=rokken
+    ports:
+      - "8432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rokken"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
