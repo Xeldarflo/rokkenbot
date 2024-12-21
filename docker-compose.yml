@@ -20,8 +20,10 @@ services:
       - POSTGRES_USER=rokken
     ports:
       - "8432:5432"
+    volumes:
+      - /var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U rokken"]
+      test: ["CMD-SHELL", "pg_isready -U rokken -d rokken"]
       interval: 5s
       timeout: 5s
       retries: 3
