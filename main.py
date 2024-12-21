@@ -4,7 +4,7 @@ TODO restor role command """
 
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import re
 import os
 from unidecode import unidecode
@@ -119,7 +119,8 @@ def hasRole(member, name):
 
 def getMemberRole(role):
     s = select(roleusers, users).join(roles, roleusers.c.role_id == roles.c.id).join(users, roleusers.c.user_id == users.c.id).where(roles.c.discord_id == str(role.id))
-    result = engine.execute(s)
+    with engine.connect() as conn:
+        result = conn.execute(s)
     return result
 
 def getEmojiByName(name, strict=False):
@@ -133,11 +134,15 @@ def getEmojiByName(name, strict=False):
 def userToDB(user):
     name = unidecode(user.name.lower())
     s = select(users).where(users.c.discord_id == str(user.id))
-    result = engine.execute(s)
+    with engine.connect() as conn:
+        result = conn.execute(s)
+    
 
     if(result.rowcount == 0):
         ins = users.insert().values(name=name, discord_id=str(user.id))
-        return engine.execute(ins)
+        with engine.connect() as conn:
+                result = conn.execute(ins)
+                conn.commit()
     else:
         return True
 
@@ -153,10 +158,13 @@ async def allUsersToDB(ctx):
 def roleToDb(role):
     name = unidecode(role.name.lower())
     s = select(roles).where(roles.c.discord_id == str(role.id))
-    result = engine.execute(s)
+    with engine.connect() as conn:
+        result = conn.execute(s)
     if(result.rowcount == 0):
         ins = roles.insert().values(name=name, discord_id=role.id)
-        return engine.execute(ins)
+        with engine.connect() as conn:
+                result = conn.execute(ins)
+                conn.commit()
     else:
         return True
 
@@ -196,21 +204,27 @@ def roleUserToDB(user):
     rolesUser = user.roles 
     userToDB(user)
     s = select(users).where(users.c.discord_id == str(user.id))
-    result = engine.execute(s)
+    with engine.connect() as conn:
+        result = conn.execute(s)
     idUser = result.first().id
     for role in rolesUser:
         roleToDb(role)
         if totRoles > 0 and role.id != roleIgnored:
             s = select(roles).where(roles.c.discord_id == str(role.id))
-            result = engine.execute(s)
+            with engine.connect() as conn:
+                result = conn.execute(s)
             idRole = result.first().id
 
             s = select(roleusers).where(roleusers.c.role_id == str(idRole), roleusers.c.user_id == str(idUser))
-            result = engine.execute(s)
+            with engine.connect() as conn:
+                result = conn.execute(s)
             if result.rowcount == 0:
                 ins = roleusers.insert().values(role_id=idRole, user_id=idUser)
-                if engine.execute(ins):
-                   nbSaved += 1
+                with engine.connect() as conn:
+                    result = conn.execute(ins)
+                    conn.commit()
+                    if(result):
+                        nbSaved += 1
             else:
                 nbSaved += 1 
         else: 
@@ -230,14 +244,16 @@ async def allRoleUserToDB(ctx):
         
 async def restorRolesToUser(ctx, user):
     s = select(users).where(users.c.discord_id == str(user.id))
-    result = engine.execute(s)
+    with engine.connect() as conn:
+        result = conn.execute(s)
     if result.rowcount == 0:
         return False
     idUser = result.first().id
 
     j = roleusers.join(roles, roleusers.c.role_id == roles.c.id)
     s = select(roleusers, roles).select_from(j).where(roleusers.c.user_id == idUser)
-    result = engine.execute(s)
+    with engine.connect() as conn:
+        result = conn.execute(s)
 
     for row in result:
         if not hasRole(user, row.name):
@@ -428,7 +444,8 @@ async def getfreeprimegames(ctx):
     for entry in feed.entries:
 
         s = select(primegames).where(primegames.c.rss_id == str(entry.id))
-        result = engine.execute(s)
+        with engine.connect() as conn:
+            result = conn.execute(s)
         if(result.rowcount > 0):
             return False
 
@@ -464,7 +481,9 @@ async def getfreeprimegames(ctx):
         res = await ctx.channel.send(file=primeFile, embed=embed)
         if(res):
             ins = primegames.insert().values(rss_id=str(entry.id))
-            engine.execute(ins)
+            with engine.connect() as conn:
+                result = conn.execute(ins)
+                conn.commit()
             
     return True
 
