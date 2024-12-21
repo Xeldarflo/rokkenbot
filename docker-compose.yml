@@ -1,0 +1,3 @@
+services:
+  rokkenbot:
+    image: 'dockerfile'
