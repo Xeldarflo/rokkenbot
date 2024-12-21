@@ -10,6 +10,7 @@ import os
 from unidecode import unidecode
 from sqlalchemy import create_engine, Table, Column, Integer, String, MetaData, ForeignKey, UniqueConstraint
 from sqlalchemy.sql import select
+import feedparser
 
 token = os.environ.get('DISCORD_TOKEN')
 dbUsername = os.environ.get('DB_USERNAME')
@@ -41,7 +42,12 @@ roleusers = Table('roleusers', metadata_obj,
      Column('role_id', ForeignKey("roles.id")),
      Column('user_id', ForeignKey("users.id")),
      UniqueConstraint('role_id', 'user_id', name='uniq_1')
- )
+)
+
+primegames = Table('primegames', metadata_obj,
+     Column('id', Integer, primary_key=True),
+     Column('rss_id', String, unique=True),
+)
 
 
 
@@ -416,5 +422,50 @@ async def on_member_remove(member):
     else:
         await channel.send('Some roles for '+member.display_name+' have not been saved')
 
+@bot.command()
+async def getfreeprimegames(ctx):
+    feed = feedparser.parse("https://feed.phenx.de/lootscraper_amazon_game.xml")
+    for entry in feed.entries:
+
+        s = select(primegames).where(primegames.c.rss_id == str(entry.id))
+        result = engine.execute(s)
+        if(result.rowcount > 0):
+            return False
+
+        dateValid = re.search(r'<li><b>Offer valid to:</b>.{19}</li>', entry.content[0].value)
+        dateValid = dateValid[0]
+        dateValid = dateValid[27:45]
+        
+        imgSrc = re.search(r'img src=\".{0,100}\"', entry.content[0].value)
+        imgSrc = imgSrc[0]
+        imgSrc = imgSrc[imgSrc.find("\"")+1:len(imgSrc)-1] 
+
+        price = re.search(r'[0-9]{1,3}([,.][0-9]{1,2})? EUR', entry.content[0].value)
+        if price:
+            price = price[0].replace(" EUR", "€")
+            price = "~~"+price+"~~ "
+        else:
+            price = ""
+
+        title = entry.title.replace("Amazon Prime (Game) - ", "")
+
+        embed = discord.Embed(title=title,
+                      url=entry.link,
+                      description=price + "**Gratuit** jusqu'au: " + dateValid)
+        embed.set_image(url=imgSrc)
+
+        primeFile = discord.File("/app/assets/images/prime-gaming.png", filename="prime-gaming.png")
+        embed.set_thumbnail(url="attachment://prime-gaming.png")
+
+        embed.add_field(name="",
+                value="[**Ouvrir dans le navigateur ↗**]("+entry.link+")",
+                inline=False)
+
+        res = await ctx.channel.send(file=primeFile, embed=embed)
+        if(res):
+            ins = primegames.insert().values(rss_id=str(entry.id))
+            engine.execute(ins)
+            
+    return True
 
 bot.run(token)
