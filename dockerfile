@@ -7,7 +7,9 @@ RUN pip install git+https://github.com/sqlalchemy/sqlalchemy@rel_1_4_23
 RUN pip install dnspython==1.16.0
 RUN pip install PyNaCl==1.3.0
 RUN pip install async-timeout==3.0.1
-RUN mkdir /app
+RUN pip install feedparser
+RUN mkdir -p /app/assets/images
 COPY ./main.py /app
+COPY ./assets/images/* /app/assets/images
 
 CMD ["python3", "app/main.py"]
