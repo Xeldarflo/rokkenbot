@@ -1,0 +1,4 @@
+__pycache__
+bot/__pycache__
+bot/cogs/__pycache__
+docker-compose.yml

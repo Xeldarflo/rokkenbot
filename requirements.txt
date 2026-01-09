@@ -1,0 +1,10 @@
+discord.py
+unidecode
+psycopg2-binary
+SQLAlchemy==2.0.36
+dnspython
+PyNaCl
+async-timeout
+feedparser
+requests
+pytz
