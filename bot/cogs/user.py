@@ -52,7 +52,7 @@ class User(commands.Cog):
         return user
     
     def userToDB(self, user):
-        return self.bot.db.bot.userToDB(user)
+        return self.bot.db.userToDB(user)
     
     async def allUsersToDB(self, ctx):
         totUser = 0
